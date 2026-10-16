@@ -19,7 +19,8 @@ starting over.
 - **Installed:** `ClaudeGameHelper-win-Setup.exe` from GitHub Releases; it starts with Windows.
 - **From source:** `dotnet run --project src/ClaudeGameHelper`. Quit the installed copy first (one copy
   at a time).
-- Tray icon: orange "C". Ctrl+Shift+F1 = Screen, F2 = Ask, F3 = show/hide.
+- Tray icon: orange tile with a dark game controller (from `tools/make-icon.ps1`). Ctrl+Shift+F1 =
+  Screen, F2 = Ask, F3 = show/hide.
 - Data and logs: `Documents\Claude Game Helper\` (`<game>\`, `logs\`). Settings:
   `%APPDATA%\ClaudeGameHelper\settings.json`. Built-in instructions:
   `src/ClaudeGameHelper/BuiltInProfiles/`.

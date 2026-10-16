@@ -20,7 +20,8 @@ character or save between sessions.
 1. Download `ClaudeGameHelper-win-Setup.exe` from the [latest release](../../releases/latest).
 2. Run it. Windows may say **"Windows protected your PC"** because the installer isn't code-signed yet: click
    **More info**, then **Run anyway**. No admin rights are needed.
-3. The helper starts and puts an orange **C** in the system tray (you may need the **^** arrow to see it).
+3. The helper starts and puts an orange game-controller icon in the system tray (you may need the **^**
+   arrow to see it).
 
 It starts with Windows from then on. To turn that off, right-click the tray icon and uncheck **Start with
 Windows**. Updates download by themselves and install the next time the helper starts.
