@@ -20,6 +20,13 @@ function Invoke-Step([string] $Name, [scriptblock] $Command) {
     if ($LASTEXITCODE -ne 0) { throw "$Name failed (exit $LASTEXITCODE)." }
 }
 
+if ($Publish) {
+    # The GitHub release tag is created on the remote's current commit, so everything must be pushed first.
+    git fetch -q origin
+    if (git status --porcelain) { throw 'Uncommitted changes. Commit them before publishing.' }
+    if (git rev-list '@{u}..HEAD') { throw 'Unpushed commits. Run `git push` before publishing.' }
+}
+
 $repoUrl = (Select-String -Path 'src/ClaudeGameHelper/Platform/UpdateChecker.cs' -Pattern 'RepoUrl = "([^"]+)"').Matches[0].Groups[1].Value
 $publishDir = 'artifacts/publish'
 $releasesDir = 'releases'
