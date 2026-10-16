@@ -9,7 +9,8 @@ starting over.
 - **Phase:** v1 built and played with Fallout 76 (works well). **Sharing build done** per
   [the sharing plan](superpowers/plans/2026-10-16-sharing-and-installer.md): Velopack installer, automatic
   updates from GitHub Releases, automatic profiles for any game, data in `Documents\Claude Game Helper`,
-  README and MIT license. Publishing (plan Task 6) needs Jason's GitHub sign-in and his OK at each step.
+  README and MIT license. **Published:** https://github.com/JasonDWilson/claude-game-helper, release
+  v0.2.0 (2026-10-16). Installed from that release on Jason's PC; its update check reaches GitHub.
 - **Designs:** [v1](superpowers/specs/2026-10-16-claude-game-helper-design.md) (watch mode confirmed as
   phase 2) and [sharing](superpowers/specs/2026-10-16-sharing-and-installer-design.md).
 
@@ -31,8 +32,14 @@ GitHub release (needs `gh auth login`). Installed copies pick it up on their nex
 
 ## Next steps
 
-1. Publish (sharing plan Task 6), then share the release link.
-2. Phase 2: watch mode (v1 design §7.10).
+1. Share https://github.com/JasonDWilson/claude-game-helper/releases/latest.
+2. Deferred minors from the sharing review: fall back to `%LOCALAPPDATA%` if Documents is missing; Minecraft
+   Java version bumps create a new profile per version; a personal `CLAUDE.md` added mid-session needs a
+   restart (README doesn't say so).
+3. Phase 2: watch mode (v1 design §7.10).
+
+Commits: author Jason Wilson <jason@jwpro.com> (set in this repo's git config). The pre-publish private
+history is backed up outside the repo in `claude-game-helper-private-history.bundle`.
 
 ## Verified in the second session (Claude Code 2.1.295)
 
