@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ClaudeGameHelper.Core/ClaudeGameHelper.Core.csproj" />
+    <Project Path="src/ClaudeGameHelper/ClaudeGameHelper.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ClaudeGameHelper.Tests/ClaudeGameHelper.Tests.csproj" />
+  </Folder>
+</Solution>

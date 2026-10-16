@@ -1,0 +1,7 @@
+{
+  "displayName": "Fallout 76",
+  "windowMatch": { "processNames": ["Project76_GamePass", "Fallout76"], "titles": ["Fallout76", "Fallout 76"] },
+  "readOnlyPaths": ["{Documents}\\My Games\\Fallout 76"],
+  "trackingLabel": "Character",
+  "allowWatchMode": true
+}
