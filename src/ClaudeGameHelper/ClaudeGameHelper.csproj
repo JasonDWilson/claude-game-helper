@@ -23,6 +23,8 @@
 
   <ItemGroup>
     <None Include="BuiltInProfiles\**" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The tray loads the same icon (regenerate with tools/make-icon.ps1). -->
+    <EmbeddedResource Include="app.ico" LogicalName="ClaudeGameHelper.app.ico" />
     <ApplicationDefinition Remove="App.xaml" />
     <Page Include="App.xaml" />
   </ItemGroup>

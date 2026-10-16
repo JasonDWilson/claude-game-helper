@@ -1,12 +1,9 @@
 using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Text;
-using System.Runtime.InteropServices;
 using Forms = System.Windows.Forms;
 
 namespace ClaudeGameHelper.Tray;
 
-/// <summary>The notification-area icon and its menu. The icon is drawn at runtime; there are no image files.</summary>
+/// <summary>The notification-area icon and its menu. The icon is the app's own app.ico, embedded in the exe.</summary>
 public sealed class TrayIcon : IDisposable
 {
     private readonly Forms.NotifyIcon _icon;
@@ -18,7 +15,7 @@ public sealed class TrayIcon : IDisposable
         Action openSettings, Func<bool> startWithWindows, Action<bool> setStartWithWindows, string versionText, Action quit)
     {
         _trackingState = trackingState;
-        _image = DrawIcon();
+        _image = LoadAppIcon(Forms.SystemInformation.SmallIconSize.Width);
 
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add(new Forms.ToolStripMenuItem($"Claude Game Helper {versionText}") { Enabled = false });
@@ -58,27 +55,16 @@ public sealed class TrayIcon : IDisposable
     {
         _icon.Visible = false;
         _icon.Dispose();
-        DestroyIcon(_image.Handle);
         _image.Dispose();
     }
 
-    private static Icon DrawIcon()
+    /// <summary>The app icon (app.ico, embedded) at the closest size to <paramref name="size"/> pixels.</summary>
+    public static Icon LoadAppIcon(int size)
     {
-        using var bitmap = new Bitmap(32, 32);
-        using (var g = Graphics.FromImage(bitmap))
-        {
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
-            using var orange = new SolidBrush(Color.FromArgb(0xD9, 0x77, 0x57));
-            g.FillEllipse(orange, 1, 1, 30, 30);
-            using var font = new Font("Segoe UI", 15, System.Drawing.FontStyle.Bold, GraphicsUnit.Pixel);
-            using var dark = new SolidBrush(Color.FromArgb(0x1E, 0x1F, 0x22));
-            var format = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-            g.DrawString("C", font, dark, new RectangleF(0, 1, 32, 32), format);
-        }
-        return Icon.FromHandle(bitmap.GetHicon());
+        using var stream = typeof(TrayIcon).Assembly.GetManifestResourceStream(AppIconResource)
+            ?? throw new InvalidOperationException($"Embedded resource {AppIconResource} is missing.");
+        return new Icon(stream, size, size);
     }
 
-    [DllImport("user32.dll")]
-    private static extern bool DestroyIcon(IntPtr handle);
+    private const string AppIconResource = "ClaudeGameHelper.app.ico";
 }
