@@ -39,6 +39,23 @@ Windows**. Updates download by themselves and install the next time the helper s
 - **Deep:** turn it on in the question box for planning questions; it uses Claude's stronger model.
 - The panel never takes keyboard focus from your game unless you're typing a question.
 
+## Watch mode
+
+Watch mode lets the helper keep an eye on your game and speak up without being asked. It's off until you
+turn it on, and the switches are per game: right-click the tray icon, open **Watch mode**, and pick:
+
+- **Follow my goal:** after you ask something like "where's the Whitespring?", it checks the screen every
+  so often and tells you if you're heading the wrong way, are about to miss what you're looking for, or
+  have arrived. A new question becomes the new goal; ✕ Stop in the panel ends it, and it stops by itself
+  after 30 minutes.
+- **General tips:** occasional heads-ups you didn't ask for, such as a rare item, a mistake about to happen,
+  or something on your wishlist. At most one every few minutes, never repeated.
+- **Check every** 20 seconds to 2 minutes, and whether it plays a **chime**.
+
+Wrong-way alerts slide the panel in without taking keyboard focus; tips just chime and put a dot on the tray
+icon. Checks skip frames where nothing much changed, and each one that runs uses a little of your Claude
+plan. Don't use watch mode in competitive multiplayer games, where outside help may break the rules.
+
 ## Any game
 
 The first time you use a hotkey in a game, the helper sets that game up on its own, named after the

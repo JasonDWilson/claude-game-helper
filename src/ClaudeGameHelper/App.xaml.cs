@@ -8,6 +8,7 @@ using ClaudeGameHelper.Core.Conversations;
 using ClaudeGameHelper.Core.Hotkeys;
 using ClaudeGameHelper.Core.Profiles;
 using ClaudeGameHelper.Core.Settings;
+using ClaudeGameHelper.Core.Watch;
 using ClaudeGameHelper.Panel;
 using ClaudeGameHelper.Platform;
 using ClaudeGameHelper.Tray;
@@ -29,6 +30,10 @@ public partial class App : Application
     private ForegroundWatcher? _watcher;
     private GlobalHotkeys? _hotkeys;
     private HotkeyBindingSet? _bindings;
+    private System.Windows.Threading.DispatcherTimer? _watchTimer;
+
+    /// <summary>Stands in for the active game before the controller exists (the tray menu can't open that early anyway).</summary>
+    private static readonly GameProfile NoGameYet = new("general", "No game", "", null, [], null, null, null, false, true);
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -56,7 +61,9 @@ public partial class App : Application
         _tray = new TrayIcon(ShowPanel, () => _controller?.NewConversation(), OpenTrackingFile, TrackingState, OpenSettings,
             () => startup.IsEnabled,
             on => { if (on) startup.Enable(Environment.ProcessPath!); else startup.Disable(); },
-            AppVersion.Current, Quit);
+            AppVersion.Current,
+            new WatchMenu(() => _settings, SaveSettings, () => _controller?.ActiveProfile ?? NoGameYet),
+            Quit);
 
         _store = new SettingsStore(AppPaths.SettingsFile);
         var loaded = _store.Load();
@@ -89,12 +96,23 @@ public partial class App : Application
         _controller = new HelperController(profiles.Profiles, profiles.Fallback, ask, new WindowCapture(() => _settings),
             _panel, _vm, FocusHelper.ReturnTo, Environment.ProcessId,
             w => AutoProfiles.TryCreate(_dataRoot, _templateInstructions, w.ProcessName, w.Title, _settings.NotGames),
-            MarkNotAGame);
+            MarkNotAGame,
+            new WatchDependencies(
+                new WatchService(_settings, LocateClaude, new ClaudeRunner(), () => DateTime.Now),
+                () => _settings.Watch,
+                () => { if (_settings.Watch.Chime) System.Media.SystemSounds.Asterisk.Play(); },
+                on => _tray?.SetAttention(on)));
 
         _panel.SendRequested += () => Run(_controller.SendAskBoxAsync);
         _panel.StopRequested += _controller.Stop;
         _panel.HideRequested += _controller.HidePanel;
         _panel.NotAGameRequested += _controller.NotAGame;
+        _panel.StopWatchingRequested += _controller.StopWatching;
+        _panel.IsVisibleChanged += (_, args) =>
+        {
+            if (args.NewValue is true)
+                _tray?.SetAttention(false);   // the person can see the tip now
+        };
 
         _watcher = new ForegroundWatcher();
         _watcher.Changed += _controller.OnForegroundChanged;
@@ -108,10 +126,16 @@ public partial class App : Application
 
         Log.Info($"Ready ({AppVersion.Current}). Profiles: {string.Join(", ", profiles.Profiles.Select(p => p.Id))}; active: {_controller.ActiveProfile.Id}.");
         _ = UpdateChecker.RunAsync();
+
+        // Watch mode: the controller decides on each tick whether a check is actually due.
+        _watchTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+        _watchTimer.Tick += (_, _) => Run(_controller.OnWatchTickAsync);
+        _watchTimer.Start();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _watchTimer?.Stop();
         _hotkeys?.Dispose();
         _watcher?.Dispose();
         _tray?.Dispose();

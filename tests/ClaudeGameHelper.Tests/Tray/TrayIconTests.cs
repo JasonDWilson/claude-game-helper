@@ -16,4 +16,17 @@ public class TrayIconTests
         Assert.Equal(size, icon.Width);
         Assert.Equal(size, icon.Height);
     }
+
+    [Fact]
+    public void DotIconKeepsSizeAndChangesTheTopRight()
+    {
+        using var plain = TrayIcon.LoadAppIcon(32);
+        using var dotted = TrayIcon.WithDot(plain);
+        using var a = plain.ToBitmap();
+        using var b = dotted.ToBitmap();
+
+        Assert.Equal(32, dotted.Width);
+        Assert.NotEqual(a.GetPixel(25, 6), b.GetPixel(25, 6));
+        Assert.Equal(a.GetPixel(8, 24), b.GetPixel(8, 24));
+    }
 }
