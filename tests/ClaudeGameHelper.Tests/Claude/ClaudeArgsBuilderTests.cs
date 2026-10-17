@@ -25,6 +25,16 @@ public class ClaudeArgsBuilderTests
     }
 
     [Fact]
+    public void WatchArgsAreExact() =>
+        Assert.Equal(new[]
+        {
+            "-p", "--output-format", "stream-json", "--verbose", "--model", "sonnet", "--effort", "low",
+            "--no-session-persistence", "--safe-mode", "--restricted", "--disable-slash-commands",
+            "--tools", "Read", "--permission-mode", "dontAsk", "--allowedTools", "Read",
+            "--append-system-prompt-file", @"C:\p\CLAUDE.md",
+        }, ClaudeArgsBuilder.BuildWatch("sonnet", @"C:\p\CLAUDE.md"));
+
+    [Fact]
     public void LaterTurnsResume()
     {
         var a = ClaudeArgsBuilder.Build(new(Id, false, "opus", "medium", @"C:\p\CLAUDE.md", []));

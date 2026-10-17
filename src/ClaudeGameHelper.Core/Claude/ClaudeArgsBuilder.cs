@@ -41,4 +41,16 @@ public static class ClaudeArgsBuilder
         args.Add(r.InstructionsPath);
         return args;
     }
+
+    /// <summary>
+    /// Arguments for one watch-mode glance: a one-turn conversation that isn't saved, low effort, and only
+    /// the Read tool (to view the screenshot); no web search and no edits.
+    /// </summary>
+    public static IReadOnlyList<string> BuildWatch(string model, string instructionsPath) =>
+    [
+        "-p", "--output-format", "stream-json", "--verbose", "--model", model, "--effort", "low",
+        "--no-session-persistence", "--safe-mode", "--restricted", "--disable-slash-commands",
+        "--tools", "Read", "--permission-mode", "dontAsk", "--allowedTools", "Read",
+        "--append-system-prompt-file", instructionsPath,
+    ];
 }
