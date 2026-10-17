@@ -2,6 +2,13 @@ using System.Runtime.InteropServices;
 using ClaudeGameHelper.Core;
 using ClaudeGameHelper.Core.Layout;
 using ClaudeGameHelper.Core.Settings;
+using ClaudeGameHelper.Core.Watch;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using BitmapEncoder = Windows.Graphics.Imaging.BitmapEncoder;
+using BitmapPropertySet = Windows.Graphics.Imaging.BitmapPropertySet;
+using BitmapTypedValue = Windows.Graphics.Imaging.BitmapTypedValue;
+using BitmapInterpolationMode = Windows.Graphics.Imaging.BitmapInterpolationMode;
 using Windows.Foundation;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX;
@@ -24,6 +31,37 @@ public sealed class WindowCapture(Func<AppSettings> settings, Func<IDirect3DDevi
     public static IDirect3DDevice CreateDefaultDevice() => WgcInterop.CreateDevice();
 
     public async Task<string> CaptureAsync(IntPtr hwnd, string screenshotsDir)
+    {
+        var path = Path.Combine(screenshotsDir, $"{DateTime.Now:yyyyMMdd-HHmmss-fff}.jpg");
+        await CaptureToFileAsync(hwnd, path);
+        return path;
+    }
+
+    public async Task<WatchFrame> CaptureForWatchAsync(IntPtr hwnd, string jpgPath)
+    {
+        await CaptureToFileAsync(hwnd, jpgPath);
+        return new WatchFrame(jpgPath, GrayThumbnail(jpgPath));
+    }
+
+    /// <summary>A tiny grayscale copy of the saved picture, for watch mode's "did anything change?" check.</summary>
+    private static byte[] GrayThumbnail(string jpgPath)
+    {
+        var image = new BitmapImage();
+        image.BeginInit();
+        image.UriSource = new Uri(jpgPath);
+        image.DecodePixelWidth = FrameDiff.Width;
+        image.DecodePixelHeight = FrameDiff.Height;
+        image.CacheOption = BitmapCacheOption.OnLoad;
+        image.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+        image.EndInit();
+
+        var gray = new FormatConvertedBitmap(image, PixelFormats.Gray8, null, 0);
+        var pixels = new byte[FrameDiff.Width * FrameDiff.Height];
+        gray.CopyPixels(pixels, FrameDiff.Width, 0);
+        return pixels;
+    }
+
+    private async Task CaptureToFileAsync(IntPtr hwnd, string path)
     {
         if (!IsWindow(hwnd))
             throw new CaptureFailedException("The game window is closed.");
@@ -51,10 +89,8 @@ public sealed class WindowCapture(Func<AppSettings> settings, Func<IDirect3DDevi
         var current = settings();
         var (width, height) = ScreenshotSizing.Fit(bitmap.PixelWidth, bitmap.PixelHeight, current.ScreenshotMaxLongEdge);
 
-        Directory.CreateDirectory(screenshotsDir);
-        var path = Path.Combine(screenshotsDir, $"{DateTime.Now:yyyyMMdd-HHmmss-fff}.jpg");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         await SaveJpegAsync(bitmap, path, width, height, current.ScreenshotJpegQuality);
-        return path;
     }
 
     private static async Task<SoftwareBitmap> GrabFrameAsync(IntPtr hwnd, IDirect3DDevice device)

@@ -67,6 +67,31 @@ public class WindowCaptureTests : IDisposable
     }
 
     [Fact]
+    public async Task WatchCaptureOverwritesOneFileAndReturnsAGrayThumbnail()
+    {
+        var red = ShowWindow(Brushes.Red);
+        await Task.Delay(500);
+        var path = Path.Combine(_dir, "watch.jpg");
+
+        var a = await Capture().CaptureForWatchAsync(red, path);
+        var b = await Capture().CaptureForWatchAsync(red, path);
+
+        Assert.Equal(path, b.Path);
+        Assert.Single(Directory.GetFiles(_dir));
+        Assert.Equal(ClaudeGameHelper.Core.Watch.FrameDiff.Width * ClaudeGameHelper.Core.Watch.FrameDiff.Height, b.Thumbnail.Length);
+        Assert.True(ClaudeGameHelper.Core.Watch.FrameDiff.Difference(a.Thumbnail, b.Thumbnail) < ClaudeGameHelper.Core.Watch.FrameDiff.SkipBelow);
+        Assert.InRange(b.Thumbnail[b.Thumbnail.Length / 2], 40, 200);   // red in grayscale is a mid gray, not black or white
+    }
+
+    [Fact]
+    public async Task WatchCaptureOfMinimizedWindowThrowsCaptureFailed()
+    {
+        var hwnd = ShowWindow(Brushes.Red, state: WindowState.Minimized);
+
+        await Assert.ThrowsAsync<CaptureFailedException>(() => Capture().CaptureForWatchAsync(hwnd, Path.Combine(_dir, "watch.jpg")));
+    }
+
+    [Fact]
     public async Task MinimizedWindowThrowsCaptureFailed()
     {
         var hwnd = ShowWindow(Brushes.Red, state: WindowState.Minimized);

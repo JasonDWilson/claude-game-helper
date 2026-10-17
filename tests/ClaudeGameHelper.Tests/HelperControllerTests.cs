@@ -42,6 +42,17 @@ public class HelperControllerTests
             Captured.Add(hwnd);
             return Task.FromResult($"shot{++_count}.jpg");
         }
+
+        public byte[] WatchThumbnail { get; set; } = new byte[ClaudeGameHelper.Core.Watch.FrameDiff.Width * ClaudeGameHelper.Core.Watch.FrameDiff.Height];
+        public List<(IntPtr Hwnd, string Path)> WatchCaptures { get; } = [];
+
+        public Task<WatchFrame> CaptureForWatchAsync(IntPtr hwnd, string jpgPath)
+        {
+            if (FailWith != null)
+                throw new CaptureFailedException(FailWith);
+            WatchCaptures.Add((hwnd, jpgPath));
+            return Task.FromResult(new WatchFrame(jpgPath, WatchThumbnail));
+        }
     }
 
     private sealed class FakePanel : IPanelView
@@ -376,6 +387,9 @@ public class HelperControllerTests
             await Gate.Task;
             return $"shot{Count}.jpg";
         }
+
+        public Task<WatchFrame> CaptureForWatchAsync(IntPtr hwnd, string jpgPath) =>
+            Task.FromResult(new WatchFrame(jpgPath, []));
     }
 
     private sealed class GatedAsk : IAskService
