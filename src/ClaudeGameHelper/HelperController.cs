@@ -2,10 +2,19 @@ using ClaudeGameHelper.Core;
 using ClaudeGameHelper.Core.Claude;
 using ClaudeGameHelper.Core.Conversations;
 using ClaudeGameHelper.Core.Profiles;
+using ClaudeGameHelper.Core.Watch;
 using ClaudeGameHelper.Panel;
 using ClaudeGameHelper.Platform;
 
 namespace ClaudeGameHelper;
+
+/// <summary>What the controller needs for watch mode. <paramref name="Now"/> defaults to the clock.</summary>
+public sealed record WatchDependencies(
+    IWatchService Service,
+    Func<WatchSettings> Settings,
+    Action Chime,
+    Action<bool> SetAttention,
+    Func<DateTime>? Now = null);
 
 /// <summary>
 /// What the hotkeys and the panel's buttons do: tracks which game is in front, captures it, and sends
@@ -27,11 +36,19 @@ public sealed class HelperController
     private readonly SynchronizationContext? _ui;
     private CancellationTokenSource? _cts;
     private bool _sending;
+    private readonly WatchDependencies? _watch;
+    private CancellationTokenSource? _watchCts;
+    private bool _watchRunning;
+    private bool _gameInFront;
+    private int _watchSent;
+    private int _watchSkipped;
 
     public HelperController(IReadOnlyList<GameProfile> profiles, GameProfile fallback, IAskService ask, IGameCapture capture,
         IPanelView panel, PanelViewModel vm, Action<IntPtr> returnFocus, int ownProcessId,
-        Func<WindowInfo, GameProfile?> createAutoProfile, Action<GameProfile> markNotAGame)
+        Func<WindowInfo, GameProfile?> createAutoProfile, Action<GameProfile> markNotAGame,
+        WatchDependencies? watch = null)
     {
+        _watch = watch;
         _profiles = [.. profiles];
         _fallback = fallback;
         _createAutoProfile = createAutoProfile;
@@ -57,6 +74,8 @@ public sealed class HelperController
 
     public void OnForegroundChanged(WindowInfo window)
     {
+        // Our own panel in front means the game isn't (and the person may be typing).
+        _gameInFront = window.ProcessId != _ownProcessId;
         if (window.ProcessId == _ownProcessId)
             return;
 
@@ -181,6 +200,110 @@ public sealed class HelperController
     }
 
     /// <summary>
+    /// One watch-mode tick (the app calls this every few seconds): decide whether a check is due, capture the
+    /// game, skip it if the screen barely changed, otherwise ask Claude and show anything worth showing.
+    /// </summary>
+    public async Task OnWatchTickAsync()
+    {
+        if (_watch == null || _watchRunning)
+            return;
+
+        _watchRunning = true;
+        try
+        {
+            var profile = ActiveProfile;
+            var settings = _watch.Settings();
+            var switches = settings.For(profile.Id);
+            var state = _watch.Service.For(profile);
+            var now = Now();
+            var decision = state.Decide(new WatchInputs(now, switches, profile.AllowWatchMode && !profile.IsFallback,
+                _gameInFront, _vm.IsAskMode, _ask.IsBusy || _sending, settings.CheckEverySeconds));
+            RefreshWatchGoal();
+            if (decision != WatchDecision.Check)
+                return;
+
+            WatchFrame frame;
+            try
+            {
+                frame = await _capture.CaptureForWatchAsync(GameWindow, Path.Combine(profile.ScreenshotsDir, "watch.jpg"));
+            }
+            catch (CaptureFailedException ex)
+            {
+                // Minimized or gone: try again next time, quietly.
+                state.MarkChecked(now);
+                Log.Info($"Watch capture skipped: {ex.Message}");
+                return;
+            }
+
+            if (!state.FrameChanged(frame.Thumbnail))
+            {
+                state.MarkChecked(now);
+                Log.Info($"Watch check skipped: screen unchanged ({_watchSent} sent, {++_watchSkipped} skipped this session).");
+                return;
+            }
+
+            Log.Info($"Watch check sent ({++_watchSent} sent, {_watchSkipped} skipped this session).");
+            using var cts = new CancellationTokenSource();
+            _watchCts = cts;
+            WatchDisplay? display;
+            try
+            {
+                display = await _watch.Service.CheckAsync(profile, frame.Path, switches, _vm.ActiveTrackingName, cts.Token);
+            }
+            finally
+            {
+                if (ReferenceEquals(_watchCts, cts))
+                    _watchCts = null;
+            }
+
+            // A question asked meanwhile canceled this check; its result is stale.
+            if (!cts.IsCancellationRequested && display != null)
+                ShowWatch(profile, display);
+            RefreshWatchGoal();
+        }
+        finally
+        {
+            _watchRunning = false;
+        }
+    }
+
+    /// <summary>✕ Stop in the panel: stop following the current goal.</summary>
+    public void StopWatching()
+    {
+        _watch?.Service.For(ActiveProfile).StopGoal();
+        _vm.WatchGoalText = null;
+    }
+
+    private DateTime Now() => _watch?.Now?.Invoke() ?? DateTime.Now;
+
+    private void ShowWatch(GameProfile profile, WatchDisplay display)
+    {
+        _vm.AddWatchMessage(display.Kind, display.Text);
+        _ask.ArchiveNote(profile, $"👀 Watch: {display.Text}");
+
+        switch (display.Kind)
+        {
+            case WatchMessageKind.GoalAlert:
+                _panel.ShowPassive();   // time-sensitive: the panel slides in without taking focus
+                _watch!.Chime();
+                break;
+            case WatchMessageKind.Tip:
+                _watch!.Chime();
+                if (!_panel.IsShown)
+                    _watch.SetAttention(true);
+                break;
+        }
+    }
+
+    private void RefreshWatchGoal()
+    {
+        if (_watch == null)
+            return;
+        var following = _watch.Settings().For(ActiveProfile.Id).FollowGoal;
+        _vm.WatchGoalText = following ? _watch.Service.For(ActiveProfile).Goal?.Label : null;
+    }
+
+    /// <summary>
     /// A hotkey used on a window with no profile: make one for it (unless it's Windows itself, a browser, or
     /// something the person said isn't a game). Only hotkeys create profiles, never just focusing a window.
     /// </summary>
@@ -205,6 +328,7 @@ public sealed class HelperController
 
         ActiveProfile = profile;
         _vm.SwitchProfile(profile, TrackingFiles.List(profile));
+        RefreshWatchGoal();
         ActiveProfileChanged?.Invoke(profile);
     }
 
@@ -228,6 +352,8 @@ public sealed class HelperController
     private async Task SendAsync(string question, IReadOnlyList<string> shots, bool deep)
     {
         var profile = ActiveProfile;
+        _watchCts?.Cancel();   // his question always wins over a watch check
+        var watchState = _watch?.Service.For(profile);
         var answer = _vm.BeginExchange(question, shots);
         using var cts = new CancellationTokenSource();
         _cts = cts;
@@ -235,7 +361,8 @@ public sealed class HelperController
         AskOutcome outcome;
         try
         {
-            outcome = await _ask.AskAsync(new AskRequest(profile, question, shots, deep, _vm.ActiveTrackingName),
+            outcome = await _ask.AskAsync(
+                new AskRequest(profile, question, shots, deep, _vm.ActiveTrackingName, watchState?.RecentMessages.ToList()),
                 e => OnUi(() => _vm.Apply(answer, e)), cts.Token);
         }
         catch (Exception ex)
@@ -247,6 +374,13 @@ public sealed class HelperController
         {
             if (ReferenceEquals(_cts, cts))
                 _cts = null;
+        }
+
+        if (watchState != null && !outcome.IsError && !outcome.Canceled)
+        {
+            var followGoal = _watch!.Settings().For(profile.Id).FollowGoal;
+            watchState.RecordExchange(question, outcome.AnswerText, question == PromptBuilder.ScreenQuestion, followGoal, Now());
+            RefreshWatchGoal();
         }
 
         OnUi(() =>

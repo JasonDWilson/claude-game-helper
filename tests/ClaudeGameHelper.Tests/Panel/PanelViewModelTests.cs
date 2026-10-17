@@ -159,6 +159,29 @@ public class PanelViewModelTests
     }
 
     [Fact]
+    public void WatchMessagesAreMarked()
+    {
+        _vm.AddWatchMessage(ClaudeGameHelper.Core.Watch.WatchMessageKind.GoalAlert, "Wrong way.");
+        _vm.AddWatchMessage(ClaudeGameHelper.Core.Watch.WatchMessageKind.Tip, "Tip.");
+        _vm.AddWatchMessage(ClaudeGameHelper.Core.Watch.WatchMessageKind.GoalReached, "There.");
+
+        Assert.All(_vm.Messages, m => Assert.Equal(ChatRole.Watch, m.Role));
+        Assert.Equal([true, false, false], _vm.Messages.Select(m => m.IsAlert));
+        Assert.Equal("Wrong way.", _vm.Messages[0].Text);
+    }
+
+    [Fact]
+    public void WatchGoalTextNotifies()
+    {
+        var changed = new List<string?>();
+        _vm.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        _vm.WatchGoalText = "Where's the Whitespring?";
+
+        Assert.Contains(nameof(PanelViewModel.WatchGoalText), changed);
+    }
+
+    [Fact]
     public void IsAutoProfileFollowsTheProfile()
     {
         _vm.SwitchProfile(Profile("auto") with { IsAuto = true }, []);

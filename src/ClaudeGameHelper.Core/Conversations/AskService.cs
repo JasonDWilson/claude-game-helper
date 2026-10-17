@@ -4,7 +4,8 @@ using ClaudeGameHelper.Core.Settings;
 
 namespace ClaudeGameHelper.Core.Conversations;
 
-public sealed record AskRequest(GameProfile Profile, string Question, IReadOnlyList<string> ScreenshotPaths, bool Deep, string? ActiveTrackingName);
+public sealed record AskRequest(GameProfile Profile, string Question, IReadOnlyList<string> ScreenshotPaths, bool Deep,
+    string? ActiveTrackingName, IReadOnlyList<string>? RecentWatch = null);
 
 public sealed record AskOutcome(string AnswerText, bool IsError, bool Canceled, bool RolledOver, string Model);
 
@@ -13,6 +14,9 @@ public interface IAskService
     bool IsBusy { get; }
     Task<AskOutcome> AskAsync(AskRequest request, Action<ClaudeEvent> onEvent, CancellationToken ct);
     void NewConversation(GameProfile profile);
+
+    /// <summary>Adds a note (such as a watch-mode alert that was shown) to the game's current conversation archive.</summary>
+    void ArchiveNote(GameProfile profile, string note);
 }
 
 /// <summary>
@@ -62,7 +66,7 @@ public sealed class AskService(AppSettings settings, Func<ClaudeLocateResult> lo
                 session.SessionId, !session.HasStarted, model.Model, model.Effort, profile.InstructionsPath,
                 profile.ReadOnlyPaths.Where(Directory.Exists).ToList()));
             var prompt = PromptBuilder.Build(request.Question, request.ScreenshotPaths,
-                profile.IsFallback ? null : profile.DisplayName, profile.TrackingLabel, request.ActiveTrackingName);
+                profile.IsFallback ? null : profile.DisplayName, profile.TrackingLabel, request.ActiveTrackingName, request.RecentWatch);
             // Claude runs inside the game's data folder; a new game (or a deleted folder) doesn't have one yet.
             Directory.CreateDirectory(profile.FolderPath);
 
@@ -100,6 +104,18 @@ public sealed class AskService(AppSettings settings, Func<ClaudeLocateResult> lo
     }
 
     public void NewConversation(GameProfile profile) => Session(profile).Reset();
+
+    public void ArchiveNote(GameProfile profile, string note)
+    {
+        try
+        {
+            ConversationArchive.AppendNote(Session(profile).ArchivePath, profile.DisplayName, now(), note);
+        }
+        catch (IOException ex)
+        {
+            Log.Error("Couldn't write the conversation archive.", ex);
+        }
+    }
 
     private ConversationSession Session(GameProfile profile)
     {

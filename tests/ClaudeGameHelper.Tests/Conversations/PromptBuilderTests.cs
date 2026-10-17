@@ -31,6 +31,16 @@ public class PromptBuilderTests
         Assert.Equal("q\n\nGame: Valheim\n\nNo notes file is selected yet.", PromptBuilder.Build("q", [], "Valheim", "Notes", null));
 
     [Fact]
+    public void PromptCarriesRecentWatchMessages() =>
+        Assert.EndsWith(
+            "\n\nWatch mode recently told me:\n- Legendary enemy to the left.",
+            PromptBuilder.Build("q", [], null, null, null, ["Legendary enemy to the left."]));
+
+    [Fact]
+    public void NoRecentWatchMessagesAddsNothing() =>
+        Assert.Equal("q", PromptBuilder.Build("q", [], null, null, null, []));
+
+    [Fact]
     public void GameLineComesAfterScreenshots() =>
         Assert.Equal(
             "q\n\nScreenshots of my game screen (view each with the Read tool):\n- a.jpg\n\nGame: Valheim",

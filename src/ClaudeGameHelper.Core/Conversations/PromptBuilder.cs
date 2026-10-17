@@ -11,7 +11,7 @@ public static class PromptBuilder
     /// tracking file.
     /// </summary>
     public static string Build(string question, IReadOnlyList<string> screenshotPaths, string? gameName,
-        string? trackingLabel, string? activeTrackingName)
+        string? trackingLabel, string? activeTrackingName, IReadOnlyList<string>? recentWatch = null)
     {
         var sb = new StringBuilder(question.Trim());
 
@@ -31,6 +31,13 @@ public static class PromptBuilder
             sb.Append(activeTrackingName == null
                 ? $"\n\nNo {label} file is selected yet."
                 : $"\n\nActive {label} file: {TrackingFiles.RelativePath(activeTrackingName)}");
+        }
+
+        if (recentWatch is { Count: > 0 })
+        {
+            sb.Append("\n\nWatch mode recently told me:");
+            foreach (var message in recentWatch)
+                sb.Append("\n- ").Append(message);
         }
 
         return sb.ToString();

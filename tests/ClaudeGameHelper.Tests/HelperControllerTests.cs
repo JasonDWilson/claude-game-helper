@@ -27,6 +27,7 @@ public class HelperControllerTests
         }
 
         public void NewConversation(GameProfile profile) => NewConversations.Add(profile);
+        public void ArchiveNote(GameProfile profile, string note) { }
     }
 
     private sealed class FakeCapture : IGameCapture
@@ -345,6 +346,7 @@ public class HelperControllerTests
     {
         public bool IsBusy => false;
         public void NewConversation(GameProfile profile) { }
+        public void ArchiveNote(GameProfile profile, string note) { }
 
         public Task<AskOutcome> AskAsync(AskRequest request, Action<ClaudeEvent> onEvent, CancellationToken ct)
         {
@@ -399,6 +401,7 @@ public class HelperControllerTests
         public int Calls { get; private set; }
         public bool IsBusy => _inFlight;
         public void NewConversation(GameProfile profile) { }
+        public void ArchiveNote(GameProfile profile, string note) { }
 
         public async Task<AskOutcome> AskAsync(AskRequest request, Action<ClaudeEvent> onEvent, CancellationToken ct)
         {

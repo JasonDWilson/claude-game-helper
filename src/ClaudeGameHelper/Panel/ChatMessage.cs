@@ -5,6 +5,9 @@ public enum ChatRole
     You,
     Claude,
     Note,
+
+    /// <summary>Something watch mode said without being asked.</summary>
+    Watch,
 }
 
 public sealed class ChatMessage(ChatRole role, string text, IReadOnlyList<string>? screenshots = null) : ObservableObject
@@ -14,6 +17,9 @@ public sealed class ChatMessage(ChatRole role, string text, IReadOnlyList<string
     private bool _isError;
 
     public ChatRole Role { get; } = role;
+
+    /// <summary>A time-sensitive watch alert (wrong way, about to miss it), shown with the accent color.</summary>
+    public bool IsAlert { get; init; }
     public IReadOnlyList<string> Screenshots { get; } = screenshots ?? [];
 
     public string Text { get => _text; set => Set(ref _text, value); }

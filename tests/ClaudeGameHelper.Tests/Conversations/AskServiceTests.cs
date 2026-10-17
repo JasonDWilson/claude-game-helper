@@ -286,6 +286,26 @@ public class AskServiceTests
     }
 
     [Fact]
+    public async Task ArchiveNoteAppendsToTheCurrentConversation()
+    {
+        var service = Service();
+        await service.AskAsync(Request(), _ => { }, CancellationToken.None);
+
+        service.ArchiveNote(_profile, "👀 Watch: Wrong way.");
+
+        var archive = File.ReadAllText(Path.Combine(_profile.ConversationsDir, "2026-10-16_201500.md"));
+        Assert.EndsWith("## 👀 Watch · 20:15\n👀 Watch: Wrong way.\n\n", archive);
+    }
+
+    [Fact]
+    public async Task RecentWatchGoesIntoThePrompt()
+    {
+        await Service().AskAsync(Request() with { RecentWatch = ["Plan on the vendor."] }, _ => { }, CancellationToken.None);
+
+        Assert.EndsWith("Watch mode recently told me:\n- Plan on the vendor.", _runner.Launches.Single().StdinText);
+    }
+
+    [Fact]
     public async Task NewConversationStartsFresh()
     {
         var service = Service();

@@ -29,6 +29,9 @@ public class PanelWindowSmokeTests : IDisposable
             var error = vm.BeginExchange("And this?", []);
             vm.Finish(error, new AskOutcome("You've hit your limit", true, false, false, "opus"));
             vm.StatusText = "Searching the web: x";
+            vm.AddWatchMessage(ClaudeGameHelper.Core.Watch.WatchMessageKind.GoalAlert, "Wrong way. Turn around.");
+            vm.AddWatchMessage(ClaudeGameHelper.Core.Watch.WatchMessageKind.Tip, "Legendary enemy ahead.");
+            vm.WatchGoalText = "Where's the Whitespring?";
 
             var window = new PanelWindow(vm, null, saved.Add, () => IntPtr.Zero);
             window.ShowPassive();

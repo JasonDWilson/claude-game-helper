@@ -60,6 +60,20 @@
                     <Setter TargetName="Plain" Property="FontStyle" Value="Italic" />
                     <Setter TargetName="Plain" Property="Foreground" Value="{StaticResource Muted}" />
                 </DataTrigger>
+                <DataTrigger Binding="{Binding Role}" Value="Watch">
+                    <Setter TargetName="Header" Property="Text" Value="👀 Watch" />
+                    <Setter TargetName="Plain" Property="Visibility" Value="Collapsed" />
+                    <Setter TargetName="Shots" Property="Visibility" Value="Collapsed" />
+                    <Setter TargetName="Rich" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="Bubble" Property="BorderBrush" Value="{StaticResource Muted}" />
+                    <Setter TargetName="Bubble" Property="BorderThickness" Value="2,0,0,0" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsAlert}" Value="True">
+                    <Setter TargetName="Bubble" Property="BorderBrush" Value="{StaticResource Accent}" />
+                    <Setter TargetName="Bubble" Property="Background" Value="#33D97757" />
+                    <Setter TargetName="Header" Property="Text" Value="👀 Watch · heads up" />
+                    <Setter TargetName="Header" Property="Foreground" Value="{StaticResource Accent}" />
+                </DataTrigger>
                 <DataTrigger Binding="{Binding IsError}" Value="True">
                     <Setter TargetName="Rich" Property="Foreground" Value="{StaticResource ErrorBrush}" />
                 </DataTrigger>
@@ -76,7 +90,8 @@
         </Grid.RowDefinitions>
 
         <!-- Header: drag to move -->
-        <DockPanel Grid.Row="0" Background="#18191C" MouseLeftButtonDown="Header_MouseLeftButtonDown">
+        <StackPanel Grid.Row="0">
+        <DockPanel Background="#18191C" MouseLeftButtonDown="Header_MouseLeftButtonDown">
             <Button DockPanel.Dock="Right" Content="✕" Style="{StaticResource FlatButton}" Click="Hide_Click" ToolTip="Hide (focus goes back to the game)" />
             <Button DockPanel.Dock="Right" Content="Not a game" Style="{StaticResource FlatButton}" Click="NotAGame_Click"
                     Visibility="{Binding IsAutoProfile, Converter={StaticResource BoolToVis}}"
@@ -89,6 +104,16 @@
                 </StackPanel>
             </StackPanel>
         </DockPanel>
+
+        <!-- Watch mode's current goal -->
+        <DockPanel Background="#22D97757" Visibility="{Binding WatchGoalText, Converter={StaticResource NullToCollapsed}}">
+            <Button DockPanel.Dock="Right" Content="✕ Stop" Style="{StaticResource FlatButton}" Click="StopWatching_Click"
+                    ToolTip="Stop watching for this" />
+            <TextBlock Margin="12,4" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="#E6E6E6">
+                <Run Text="👀 Watching: " Foreground="{StaticResource Accent}" /><Run Text="{Binding WatchGoalText, Mode=OneWay}" />
+            </TextBlock>
+        </DockPanel>
+        </StackPanel>
 
         <!-- Conversation -->
         <ScrollViewer x:Name="Scroller" Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="12,10">

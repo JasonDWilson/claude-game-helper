@@ -22,4 +22,12 @@ public static class ConversationArchive
 
         File.AppendAllText(archivePath, sb.ToString());
     }
+
+    /// <summary>Appends an unprompted note, such as a watch-mode alert that was shown.</summary>
+    public static void AppendNote(string archivePath, string profileName, DateTime at, string note)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(archivePath)!);
+        var header = File.Exists(archivePath) ? "" : $"# {profileName} — {at:yyyy-MM-dd HH:mm}\n\n";
+        File.AppendAllText(archivePath, $"{header}## 👀 Watch · {at:HH:mm}\n{note.Trim()}\n\n");
+    }
 }

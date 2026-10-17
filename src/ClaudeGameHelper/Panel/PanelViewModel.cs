@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using ClaudeGameHelper.Core.Claude;
 using ClaudeGameHelper.Core.Conversations;
 using ClaudeGameHelper.Core.Profiles;
+using ClaudeGameHelper.Core.Watch;
 
 namespace ClaudeGameHelper.Panel;
 
@@ -16,6 +17,7 @@ public sealed class PanelViewModel : ObservableObject
     private string _profileName = "";
     private string? _trackingLabel;
     private bool _isAutoProfile;
+    private string? _watchGoalText;
     private ObservableCollection<ChatMessage> _messages = [];
     private string? _activeTrackingName;
     private string _questionText = "";
@@ -142,6 +144,12 @@ public sealed class PanelViewModel : ObservableObject
     }
 
     public void AddNote(string text) => Messages.Add(new ChatMessage(ChatRole.Note, text));
+
+    public void AddWatchMessage(WatchMessageKind kind, string text) =>
+        Messages.Add(new ChatMessage(ChatRole.Watch, text) { IsAlert = kind == WatchMessageKind.GoalAlert });
+
+    /// <summary>The goal watch mode is following (shown in the header), or null.</summary>
+    public string? WatchGoalText { get => _watchGoalText; set => Set(ref _watchGoalText, value); }
 
     private void ReplaceTrackingNames(IReadOnlyList<string> names)
     {

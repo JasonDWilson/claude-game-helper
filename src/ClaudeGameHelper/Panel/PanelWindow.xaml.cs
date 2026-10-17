@@ -42,6 +42,7 @@ public partial class PanelWindow : Window, IPanelView
     public event Action? StopRequested;
     public event Action? HideRequested;
     public event Action? NotAGameRequested;
+    public event Action? StopWatchingRequested;
 
     /// <summary>Set before the app exits so closing really closes instead of hiding.</summary>
     public bool AllowClose { get; set; }
@@ -149,6 +150,8 @@ public partial class PanelWindow : Window, IPanelView
     private void Stop_Click(object sender, RoutedEventArgs e) => StopRequested?.Invoke();
 
     private void NotAGame_Click(object sender, RoutedEventArgs e) => NotAGameRequested?.Invoke();
+
+    private void StopWatching_Click(object sender, RoutedEventArgs e) => StopWatchingRequested?.Invoke();
 
     private void RemovePending_Click(object sender, RoutedEventArgs e)
     {
