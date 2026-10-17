@@ -37,7 +37,9 @@ GitHub release (needs `gh auth login`). Installed copies pick it up on their nex
 2. Deferred minors from the sharing review: fall back to `%LOCALAPPDATA%` if Documents is missing; Minecraft
    Java version bumps create a new profile per version; a personal `CLAUDE.md` added mid-session needs a
    restart (README doesn't say so).
-3. Phase 2: watch mode (v1 design §7.10).
+3. **Watch mode (phase 2) is built** per [its plan](superpowers/plans/2026-10-16-watch-mode.md) and
+   [design](superpowers/specs/2026-10-16-watch-mode-design.md): tray → Watch mode → Follow my goal / General
+   tips (per game), Check every, Chime. Not yet tried with a game running; try it, then release v0.3.0.
 
 Commits: author Jason Wilson <jason@jwpro.com> (set in this repo's git config). The pre-publish private
 history is backed up outside the repo in `claude-game-helper-private-history.bundle`.
