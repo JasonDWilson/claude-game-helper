@@ -30,6 +30,7 @@ public sealed record AppSettings
     public int ScreenshotMaxLongEdge { get; init; } = 1568;
     public int ScreenshotJpegQuality { get; init; } = 90;
     public PanelBounds? Panel { get; init; }
+    public Watch.WatchSettings Watch { get; init; } = new();
 }
 
 public sealed record SettingsLoadResult(AppSettings Settings, string? Error);

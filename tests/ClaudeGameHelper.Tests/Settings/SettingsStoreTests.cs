@@ -86,6 +86,33 @@ public class SettingsStoreTests
     public void NotGamesDefaultsToEmpty() => Assert.Empty(new AppSettings().NotGames);
 
     [Fact]
+    public void WatchSettingsDefaultsAndRoundTrip()
+    {
+        var defaults = new AppSettings().Watch;
+        Assert.Equal(30, defaults.CheckEverySeconds);
+        Assert.True(defaults.Chime);
+        Assert.Equal(new ClaudeGameHelper.Core.Watch.WatchSwitches(false, false), defaults.For("anything"));
+        Assert.Equal([20, 30, 60, 120], ClaudeGameHelper.Core.Watch.WatchSettings.Frequencies);
+
+        var store = new SettingsStore(_path);
+        store.Save(new AppSettings
+        {
+            Watch = new ClaudeGameHelper.Core.Watch.WatchSettings
+            {
+                CheckEverySeconds = 60,
+                Chime = false,
+                Games = new Dictionary<string, ClaudeGameHelper.Core.Watch.WatchSwitches> { ["fallout-76"] = new(true, false) },
+            },
+        });
+        var loaded = store.Load();
+
+        Assert.Null(loaded.Error);
+        Assert.Equal(60, loaded.Settings.Watch.CheckEverySeconds);
+        Assert.False(loaded.Settings.Watch.Chime);
+        Assert.Equal(new ClaudeGameHelper.Core.Watch.WatchSwitches(true, false), loaded.Settings.Watch.For("fallout-76"));
+    }
+
+    [Fact]
     public void MisspelledKeyIsReportedByName()
     {
         const string typo = "{ \"fastModle\": \"haiku\" }";
