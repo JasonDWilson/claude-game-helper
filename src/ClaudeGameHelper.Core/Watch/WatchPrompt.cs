@@ -46,10 +46,13 @@ public static class WatchPrompt
                 $"Tips already given: {given}");
         }
 
-        blocks.Add(
-            "Reply with exactly one line of JSON and nothing else:\n" +
-            "{\"verdict\":\"nothing|goal_alert|tip|goal_reached|no_goal\",\"message\":\"one or two short sentences, verdict first\"}\n" +
-            "goal_alert: they're heading the wrong way or about to miss what they're looking for. goal_reached: they've arrived or found it. Leave message empty for nothing and no_goal.");
+        blocks.Add(check.GoalActive
+            ? "Reply with exactly one line of JSON and nothing else:\n" +
+              "{\"verdict\":\"nothing|goal_alert|tip|goal_reached|no_goal\",\"message\":\"one or two short sentences, verdict first\"}\n" +
+              "goal_alert: they're heading the wrong way or about to miss what they're looking for. goal_reached: they've arrived or found it. Leave message empty for nothing and no_goal."
+            : "Reply with exactly one line of JSON and nothing else:\n" +
+              "{\"verdict\":\"nothing|tip\",\"message\":\"one or two short sentences, verdict first\"}\n" +
+              "Leave message empty for nothing.");
 
         return string.Join("\n\n", blocks);
     }

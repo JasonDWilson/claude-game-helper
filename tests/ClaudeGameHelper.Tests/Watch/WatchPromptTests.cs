@@ -54,6 +54,17 @@ public class WatchPromptTests
     }
 
     [Fact]
+    public void TipsOnlyPromptOffersNoGoalVerdicts()
+    {
+        var p = WatchPrompt.Build(Check(goal: false, tips: true));
+
+        Assert.Contains("{\"verdict\":\"nothing|tip\",", p);
+        Assert.DoesNotContain("goal_alert", p);
+        Assert.DoesNotContain("goal_reached", p);
+        Assert.EndsWith("Leave message empty for nothing.", p);
+    }
+
+    [Fact]
     public void PromptEndsWithTheReplyFormat()
     {
         var p = WatchPrompt.Build(Check());

@@ -227,9 +227,10 @@ public sealed class HelperController
             {
                 frame = await _capture.CaptureForWatchAsync(GameWindow, Path.Combine(profile.ScreenshotsDir, "watch.jpg"));
             }
-            catch (CaptureFailedException ex)
+            catch (Exception ex) when (ex is CaptureFailedException or IOException or UnauthorizedAccessException
+                                           or System.Runtime.InteropServices.COMException or NotSupportedException)
             {
-                // Minimized or gone: try again next time, quietly.
+                // Minimized, gone, or the picture file is busy (OneDrive, antivirus): try again next interval, quietly.
                 state.MarkChecked(now);
                 Log.Info($"Watch capture skipped: {ex.Message}");
                 return;
@@ -256,8 +257,9 @@ public sealed class HelperController
                     _watchCts = null;
             }
 
-            // A question asked meanwhile canceled this check; its result is stale.
-            if (!cts.IsCancellationRequested && display != null)
+            // Stale if a question canceled it, or the player switched away while it ran (it'd pop up over
+            // another app and land in the wrong history).
+            if (!cts.IsCancellationRequested && display != null && _gameInFront && ActiveProfile.Id == profile.Id)
                 ShowWatch(profile, display);
             RefreshWatchGoal();
         }

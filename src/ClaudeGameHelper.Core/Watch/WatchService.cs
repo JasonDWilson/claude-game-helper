@@ -47,9 +47,9 @@ public sealed class WatchService(AppSettings settings, Func<ClaudeLocateResult> 
                 _claudePath = located.Path;
             }
 
+            var goalActive = switches.FollowGoal && state.Goal != null;
             var prompt = WatchPrompt.Build(new WatchCheck(profile.DisplayName, screenshotPath, switches,
-                switches.FollowGoal && state.Goal != null, state.RecentExchanges, state.TipsGiven,
-                profile.TrackingLabel, activeTrackingName));
+                goalActive, state.RecentExchanges, state.TipsGiven, profile.TrackingLabel, activeTrackingName));
             Directory.CreateDirectory(profile.FolderPath);
 
             UsageLimit? limit = null;
@@ -68,7 +68,7 @@ public sealed class WatchService(AppSettings settings, Func<ClaudeLocateResult> 
                 return state.Pause(until, $"Watch mode paused: Claude usage limit reached. It resumes at {until:h:mm tt}.");
             }
 
-            return done.IsError ? null : state.Apply(WatchReplyParser.Parse(done.ResultText), now());
+            return done.IsError ? null : state.Apply(WatchReplyParser.Parse(done.ResultText), now(), goalActive);
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or IOException)
         {

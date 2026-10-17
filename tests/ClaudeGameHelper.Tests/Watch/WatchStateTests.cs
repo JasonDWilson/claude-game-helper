@@ -203,6 +203,15 @@ public class WatchStateTests
     }
 
     [Fact]
+    public void WithoutAGoalGoalVerdictsCantOpenThePanel()
+    {
+        Assert.Equal(new WatchDisplay(WatchMessageKind.Tip, "About to miss a legendary."),
+            _s.Apply(new WatchReply(WatchVerdict.GoalAlert, "About to miss a legendary."), Now, goalActive: false));
+        Assert.Null(_s.Apply(new WatchReply(WatchVerdict.GoalReached, "You're there."), Now.AddMinutes(5), goalActive: false));
+        Assert.Equal(["About to miss a legendary."], _s.TipsGiven);
+    }
+
+    [Fact]
     public void StopGoalClearsIt()
     {
         SetGoal();

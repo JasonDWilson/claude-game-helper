@@ -291,6 +291,55 @@ public class HelperControllerWatchTests
     }
 
     [Fact]
+    public async Task ResultArrivingAfterAltTabIsDropped()
+    {
+        await AskTyped();
+        _watch.Gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _watch.Displays.Enqueue(new WatchDisplay(WatchMessageKind.GoalAlert, "Wrong way."));
+        var tick = _controller.OnWatchTickAsync();
+        var showsBefore = _panel.ShowPassiveCalls;
+
+        _controller.OnForegroundChanged(new WindowInfo(new IntPtr(6), 88, "chrome", "Wiki - Chrome"));
+        _watch.Gate.SetResult();
+        await tick;
+
+        Assert.DoesNotContain(_vm.Messages, m => m.Text == "Wrong way.");
+        Assert.Equal(showsBefore, _panel.ShowPassiveCalls);
+        Assert.Equal(0, _chimes);
+    }
+
+    private sealed class ThrowingCapture(Exception ex) : IGameCapture
+    {
+        public int WatchCaptures { get; private set; }
+        public Task<string> CaptureAsync(IntPtr hwnd, string screenshotsDir) => Task.FromResult("shot.jpg");
+        public Task<WatchFrame> CaptureForWatchAsync(IntPtr hwnd, string jpgPath) { WatchCaptures++; throw ex; }
+    }
+
+    [Theory]
+    [InlineData("io")]
+    [InlineData("access")]
+    [InlineData("com")]
+    public async Task FileOrGraphicsErrorsOnATickAreSkippedQuietlyAndRespectTheInterval(string kind)
+    {
+        Exception ex = kind switch
+        {
+            "io" => new IOException("The file is in use."),
+            "access" => new UnauthorizedAccessException("Denied."),
+            _ => new System.Runtime.InteropServices.COMException("Encoder failed."),
+        };
+        var capture = new ThrowingCapture(ex);
+        var controller = new HelperController([_game], _fallback, _ask, capture, _panel, new PanelViewModel(), _ => { }, OwnPid,
+            _ => null, _ => { }, new WatchDependencies(_watch, () => With(new WatchSwitches(false, true)), () => { }, _ => { }, () => _now));
+        controller.OnForegroundChanged(new WindowInfo(GameHwnd, 77, "thegame", "The Game"));
+
+        await controller.OnWatchTickAsync();   // must not throw
+        _now = _now.AddSeconds(5);
+        await controller.OnWatchTickAsync();
+
+        Assert.Equal(1, capture.WatchCaptures);
+    }
+
+    [Fact]
     public async Task WithoutWatchDependenciesTicksDoNothing()
     {
         var plain = new HelperController([_game], _fallback, _ask, _capture, _panel, new PanelViewModel(), _ => { }, OwnPid, _ => null, _ => { });

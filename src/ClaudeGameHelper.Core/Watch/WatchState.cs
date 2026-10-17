@@ -119,8 +119,14 @@ public sealed class WatchState
     public void MarkChecked(DateTime now) => _lastCheck = now;
 
     /// <summary>Turns a check's reply into what to show, after the pacing rules; null means show nothing.</summary>
-    public WatchDisplay? Apply(WatchReply reply, DateTime now)
+    public WatchDisplay? Apply(WatchReply reply, DateTime now, bool goalActive = true)
     {
+        // With no goal being followed, a "goal" verdict is at most a tip: only goal alerts may open the panel.
+        if (!goalActive && reply.Verdict == WatchVerdict.GoalAlert)
+            reply = reply with { Verdict = WatchVerdict.Tip };
+        else if (!goalActive && reply.Verdict == WatchVerdict.GoalReached)
+            return null;
+
         switch (reply.Verdict)
         {
             case WatchVerdict.GoalReached:
